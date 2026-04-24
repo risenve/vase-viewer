@@ -631,7 +631,6 @@ function buildCatalog() {
           class="card-real-img"
           src="images/${vase.file}"
           alt="${vase.name}"
-          loading="lazy"
           onerror="this.style.display='none'"
           onload="this.classList.add('loaded'); this.previousElementSibling.style.display='none'"
         />
@@ -646,6 +645,13 @@ function buildCatalog() {
     card.addEventListener('touchend', e => { e.preventDefault(); selectCatalogVase(vase, card); });
 
     catalog.appendChild(card);
+
+    // If image already in cache, show immediately
+    const cardImg = card.querySelector('.card-real-img');
+    if (cardImg.complete && cardImg.naturalWidth > 0) {
+      cardImg.classList.add('loaded');
+      cardImg.previousElementSibling.style.display = 'none';
+    }
   });
 }
 
@@ -932,6 +938,8 @@ function onDragEnd(e) {
 }
 
 /* ── INIT ── */
+// Preload all vase images into browser cache
+VASES.forEach(v => { const img = new Image(); img.src = `images/${v.file}`; });
 buildCatalog();
 video.style.display = 'none';
 </script>
