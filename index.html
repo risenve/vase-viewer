@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>VASÉ — AR Vase Viewer</title>
+<!--
+  Image files (in ./images/ folder):
+  vase-1.png   — Milano
+  vase-2.png   — Kyoto
+  vase-3.png   — Oslo
+  vase-4.png   — Paris
+  vase-5.png   — Vienna
+  vase-6.png   — Havana
+  vase-7.png   — Nairobi
+  vase-8.png   — Seoul
+  vase-9.png   — Lisbon
+  vase-10.png  — Cairo
+  vase-11.png  — Stockholm
+  vase-12.png  — Mumbai
+  vase-13.png  — Dubrovnik
+  vase-14.png  — Athens
+
+  PNG with transparent background — renders with drop-shadow blending in AR scene.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:   #F5F0EB;
+    --warm:    #EDE6DC;
+    --sand:    #D4C8B8;
+    --dark:    #2C2C2C;
+    --mid:     #6B6560;
+    --accent:  #8B6F5E;
+    --gold:    #C4A882;
+    --ring:    #C4A882;
+    --panel-h: 210px;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #111;
+    font-family: 'Inter', sans-serif;
+    color: var(--dark);
+  }
+
+  /* ── SCENE ── */
+  #scene {
+    position: fixed; inset: 0;
+    cursor: crosshair;
+    user-select: none;
+  }
+
+  #video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* mirror for selfie feel */
+  }
+
+  #no-camera {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px;
+    background: linear-gradient(145deg, #1a1612 0%, #2a2420 50%, #1a1612 100%);
+    color: var(--sand);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+  }
+  #no-camera .nc-icon { font-size: 2.5rem; opacity: 0.4; }
+  #no-camera small { font-family: 'Inter', sans-serif; font-size: 0.75rem; opacity: 0.5; }
+
+  /* ── TOP BAR ── */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 58px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: linear-gradient(to bottom, rgba(20,16,12,0.82) 0%, transparent 100%);
+    z-index: 100;
+    backdrop-filter: blur(2px);
+  }
+
+  #brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem;
+    font-weight: 300;
+    letter-spacing: 0.22em;
+    color: var(--cream);
+    text-transform: uppercase;
+  }
+  #brand span { font-style: italic; font-weight: 400; color: var(--gold); }
+
+  #top-actions { display: flex; gap: 10px; align-items: center; }
+
+  .top-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid rgba(196,168,130,0.4);
+    border-radius: 40px;
+    background: rgba(20,16,12,0.55);
+    color: var(--cream);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .top-btn:hover { background: rgba(196,168,130,0.18); border-color: var(--gold); }
+  .top-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  #camera-btn .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #4CAF50;
+    box-shadow: 0 0 6px #4CAF50;
+    flex-shrink: 0;
+  }
+  #camera-btn .dot.off { background: #f44336; box-shadow: 0 0 6px #f44336; }
+
+  /* ── HINT TOAST ── */
+  #hint {
+    position: fixed;
+    top: 70px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,16,12,0.75);
+    color: var(--sand);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    padding: 8px 18px;
+    border-radius: 40px;
+    border: 1px solid rgba(196,168,130,0.25);
+    backdrop-filter: blur(6px);
+    z-index: 90;
+    white-space: nowrap;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  #hint.hidden { opacity: 0; }
+
+  /* ── BOTTOM PANEL ── */
+  #panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--panel-h);
+    background: linear-gradient(to top, rgba(15,12,9,0.96) 60%, rgba(15,12,9,0.0) 100%);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    display: flex; flex-direction: column;
+  }
+
+  #panel-handle {
+    width: 36px; height: 4px;
+    background: rgba(196,168,130,0.3);
+    border-radius: 2px;
+    margin: 10px auto 6px;
+    cursor: ns-resize;
+  }
+
+  #panel-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  #catalog {
+    display: flex;
+    gap: 12px;
+    padding: 0 16px 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+  }
+  #catalog::-webkit-scrollbar { height: 3px; }
+  #catalog::-webkit-scrollbar-track { background: transparent; }
+  #catalog::-webkit-scrollbar-thumb { background: rgba(196,168,130,0.3); border-radius: 2px; }
+
+  /* ── CATALOG CARD ── */
+  .card {
+    flex-shrink: 0;
+    width: 110px;
+    scroll-snap-align: start;
+    cursor: pointer;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(30,24,18,0.85);
+    border: 1.5px solid rgba(196,168,130,0.15);
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { border-color: rgba(196,168,130,0.45); transform: translateY(-2px); }
+  .card.selected {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(196,168,130,0.35), 0 8px 24px rgba(0,0,0,0.5);
+    transform: translateY(-4px);
+  }
+
+  .card-img-wrap {
+    width: 100%; height: 90px;
+    position: relative;
+    background: #1e1812;
+    overflow: hidden;
+  }
+
+  /* ── PLACEHOLDER ── */
+  .card-placeholder {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 5px;
+    border: 1.5px dashed rgba(196,168,130,0.25);
+    border-radius: 6px;
+    margin: 6px;
+  }
+  .card-placeholder svg {
+    width: 22px; height: 22px;
+    opacity: 0.35;
+    color: var(--gold);
+  }
+  .card-placeholder span {
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+    color: var(--gold);
+    opacity: 0.45;
+  }
+
+  /* Real photo — hidden until src provided */
+  .card-real-img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: none; /* shown once src is set */
+  }
+  .card-real-img.loaded { display: block; }
+
+  .card-info {
+    padding: 7px 8px 8px;
+    flex: 1;
+  }
+  .card-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--cream);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-price {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    color: var(--gold);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── PLACED VASE ── */
+  .placed-vase {
+    position: absolute;
+    transform-origin: center bottom;
+    cursor: grab;
+    touch-action: none;
+    z-index: 50;
+    transition: filter 0.15s;
+  }
+  .placed-vase:active { cursor: grabbing; }
+
+  .placed-vase-inner {
+    position: relative;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+
+  /* Placeholder rendered on scene */
+  .placed-placeholder {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+    background: rgba(245,240,235,0.12);
+    border: 2px dashed rgba(196,168,130,0.4);
+    border-radius: 8px;
+    backdrop-filter: blur(3px);
+    width: 100%; height: 100%;
+  }
+  .placed-placeholder svg {
+    width: 36px; height: 36px;
+    color: var(--gold); opacity: 0.55;
+  }
+  .placed-placeholder span {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.78rem;
+    color: var(--cream);
+    opacity: 0.5;
+    letter-spacing: 0.06em;
+  }
+
+  /* Real PNG photo on scene — object-fit: contain, transparent bg */
+  .placed-real-img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: none;
+    filter: drop-shadow(0 16px 32px rgba(0,0,0,0.5));
+  }
+  .placed-real-img.loaded { display: block; }
+
+  /* Drop shadow + slight transparency for blending */
+  .placed-vase-inner {
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.55));
+    opacity: 0.93;
+  }
+
+  /* Selection ring */
+  .placed-vase.selected .placed-vase-inner::after {
+    content: '';
+    position: absolute; inset: -5px;
+    border: 2.5px solid var(--ring);
+    border-radius: 8px;
+    box-shadow: 0 0 0 4px rgba(196,168,130,0.18), inset 0 0 0 4px rgba(196,168,130,0.08);
+    pointer-events: none;
+  }
+
+  /* Vase label on scene */
+  .placed-label {
+    position: absolute;
+    bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15,12,9,0.78);
+    color: var(--cream);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .placed-vase.selected .placed-label { opacity: 1; }
+
+  /* ── SIZE SLIDER PANEL ── */
+  #size-panel {
+    position: fixed;
+    left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--panel-h) + 14px);
+    background: rgba(15,12,9,0.82);
+    border: 1px solid rgba(196,168,130,0.25);
+    border-radius: 40px;
+    padding: 10px 20px;
+    display: flex; align-items: center; gap: 14px;
+    z-index: 110;
+    backdrop-filter: blur(8px);
+    transition: opacity 0.25s, transform 0.25s;
+    opacity: 0; pointer-events: none;
+    transform: translateX(-50%) translateY(8px);
+  }
+  #size-panel.visible {
+    opacity: 1; pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  #size-panel label {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  #size-slider {
+    -webkit-appearance: none;
+    width: 120px; height: 3px;
+    background: rgba(196,168,130,0.2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  #size-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 6px rgba(196,168,130,0.5);
+    cursor: pointer;
+  }
+
+  #delete-btn {
+    background: none;
+    border: 1px solid rgba(220,80,60,0.4);
+    border-radius: 50%;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    color: #e07060;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  #delete-btn:hover { background: rgba(220,80,60,0.18); border-color: #e07060; }
+  #delete-btn svg { width: 13px; height: 13px; }
+
+  /* ── INSTRUCTIONS OVERLAY ── */
+  #instructions {
+    position: fixed; inset: 0;
+    background: rgba(10,8,6,0.88);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    z-index: 200;
+    padding: 40px;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.4s;
+  }
+  #instructions.hidden { opacity: 0; pointer-events: none; }
+
+  .inst-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    color: var(--cream);
+    text-transform: uppercase;
+  }
+  .inst-brand em { font-style: italic; color: var(--gold); }
+
+  .inst-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: var(--sand);
+    letter-spacing: 0.1em;
+    font-style: italic;
+    margin-top: -10px;
+  }
+
+  .inst-steps {
+    display: flex; flex-direction: column; gap: 10px;
+    margin: 10px 0;
+  }
+  .inst-step {
+    display: flex; align-items: flex-start; gap: 12px;
+    color: var(--cream);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+  }
+  .inst-num {
+    width: 22px; height: 22px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.68rem;
+    color: var(--gold);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  #start-btn {
+    margin-top: 10px;
+    padding: 13px 40px;
+    background: var(--gold);
+    color: var(--dark);
+    border: none;
+    border-radius: 40px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(196,168,130,0.35);
+  }
+  #start-btn:hover { background: #d4b88f; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(196,168,130,0.45); }
+
+  /* ── COUNT BADGE ── */
+  #count-badge {
+    position: fixed;
+    top: 66px; right: 20px;
+    background: rgba(196,168,130,0.18);
+    border: 1px solid rgba(196,168,130,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    z-index: 90;
+    transition: opacity 0.3s;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #count-badge.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── INSTRUCTIONS SCREEN ── -->
+<div id="instructions">
+  <div class="inst-brand">VAS<em>É</em></div>
+  <div class="inst-tagline">Place beauty in your world</div>
+  <div class="inst-steps">
+    <div class="inst-step">
+      <div class="inst-num">1</div>
+      <div>Allow camera access to see your real environment as the backdrop</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-num">2</div>
+      <div>Browse the catalog below and tap a vase to select it</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-num">3</div>
+      <div>Tap anywhere in the scene to place the vase — drag to reposition</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-num">4</div>
+      <div>Tap a placed vase to select it, then resize or delete it</div>
+    </div>
+  </div>
+  <button id="start-btn">Enable Camera</button>
+</div>
+
+<!-- ── SCENE ── -->
+<div id="scene">
+  <video id="video" autoplay playsinline muted></video>
+  <div id="no-camera">
+    <div class="nc-icon">&#9673;</div>
+    <div>Camera unavailable</div>
+    <small>Grant camera permission and refresh</small>
+  </div>
+</div>
+
+<!-- ── TOP BAR ── -->
+<div id="topbar">
+  <div id="brand">VAS<span>É</span></div>
+  <div id="top-actions">
+    <button class="top-btn" id="camera-btn">
+      <div class="dot off"></div>
+      <span>Camera</span>
+    </button>
+    <button class="top-btn" id="clear-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 4h10M6 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M5 4l.5 8a1 1 0 0 0 1 .9h3a1 1 0 0 0 1-.9L11 4"/>
+      </svg>
+      <span>Clear All</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── HINT ── -->
+<div id="hint">Select a vase from the catalog, then tap the scene to place it</div>
+
+<!-- ── COUNT BADGE ── -->
+<div id="count-badge"></div>
+
+<!-- ── SIZE / DELETE PANEL ── -->
+<div id="size-panel">
+  <label>Size</label>
+  <input type="range" id="size-slider" min="60" max="400" value="160" />
+  <button id="delete-btn" title="Delete (Delete key)">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M3 4h10M6 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M5 4l.5 8a1 1 0 0 0 1 .9h3a1 1 0 0 0 1-.9L11 4"/>
+    </svg>
+  </button>
+</div>
+
+<!-- ── BOTTOM PANEL ── -->
+<div id="panel">
+  <div id="panel-handle"></div>
+  <div id="panel-label">Collection</div>
+  <div id="catalog"></div>
+</div>
+
+<script>
+/* ──────────────────────────────────────────
+   VASE DATA
+   14 vases — drop images into ./images/
+   naming: vase-01.jpg … vase-14.jpg
+   Use PNG with transparent background for best blending
+────────────────────────────────────────── */
+const VASES = [
+  { id: 1,  name: 'Milano',    price: '$120', file: 'vase-1.png'  },
+  { id: 2,  name: 'Kyoto',     price: '$95',  file: 'vase-2.png'  },
+  { id: 3,  name: 'Oslo',      price: '$140', file: 'vase-3.png'  },
+  { id: 4,  name: 'Paris',     price: '$175', file: 'vase-4.png'  },
+  { id: 5,  name: 'Vienna',    price: '$110', file: 'vase-5.png'  },
+  { id: 6,  name: 'Havana',    price: '$88',  file: 'vase-6.png'  },
+  { id: 7,  name: 'Nairobi',   price: '$130', file: 'vase-7.png'  },
+  { id: 8,  name: 'Seoul',     price: '$105', file: 'vase-8.png'  },
+  { id: 9,  name: 'Lisbon',    price: '$115', file: 'vase-9.png'  },
+  { id: 10, name: 'Cairo',     price: '$98',  file: 'vase-10.png' },
+  { id: 11, name: 'Stockholm', price: '$155', file: 'vase-11.png' },
+  { id: 12, name: 'Mumbai',    price: '$82',  file: 'vase-12.png' },
+  { id: 13, name: 'Dubrovnik', price: '$145', file: 'vase-13.png' },
+  { id: 14, name: 'Athens',    price: '$135', file: 'vase-14.png' },
+];
+
+/* ── STATE ── */
+let selectedVaseData = null;   // vase from catalog currently chosen
+let selectedPlaced   = null;   // placed vase element currently selected
+let placedVases      = [];     // all placed vase elements
+let cameraActive     = false;
+let nextId           = 1;
+
+/* ── ELEMENTS ── */
+const scene       = document.getElementById('scene');
+const video       = document.getElementById('video');
+const noCamera    = document.getElementById('no-camera');
+const hint        = document.getElementById('hint');
+const sizePanel   = document.getElementById('size-panel');
+const sizeSlider  = document.getElementById('size-slider');
+const deleteBtn   = document.getElementById('delete-btn');
+const clearBtn    = document.getElementById('clear-btn');
+const cameraBtn   = document.getElementById('camera-btn');
+const instructions= document.getElementById('instructions');
+const startBtn    = document.getElementById('start-btn');
+const catalog     = document.getElementById('catalog');
+const countBadge  = document.getElementById('count-badge');
+
+/* ── BUILD CATALOG ── */
+function buildCatalog() {
+  VASES.forEach(vase => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.vaseId = vase.id;
+
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        <!-- TODO: replace with real photo -->
+        <div class="card-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M7 3h10l1 5H6L7 3zM6 8c0 4 1.5 7 3 9h6c1.5-2 3-5 3-9"/>
+            <ellipse cx="12" cy="8" rx="6" ry="1.5"/>
+          </svg>
+          <span>Vase photo</span>
+        </div>
+        <img
+          class="card-real-img"
+          src="images/${vase.file}"
+          alt="${vase.name}"
+          loading="lazy"
+          onerror="this.style.display='none'"
+          onload="this.classList.add('loaded'); this.previousElementSibling.style.display='none'"
+        />
+      </div>
+      <div class="card-info">
+        <div class="card-name">${vase.name}</div>
+        <div class="card-price">${vase.price}</div>
+      </div>
+    `;
+
+    card.addEventListener('click', () => selectCatalogVase(vase, card));
+    card.addEventListener('touchend', e => { e.preventDefault(); selectCatalogVase(vase, card); });
+
+    catalog.appendChild(card);
+  });
+}
+
+function selectCatalogVase(vase, card) {
+  selectedVaseData = vase;
+  deselectPlaced();
+
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+
+  showHint(`Tap the scene to place "${vase.name}"`);
+}
+
+/* ── CAMERA ── */
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false,
+    });
+    video.srcObject = stream;
+    video.style.display = 'block';
+    noCamera.style.display = 'none';
+    cameraActive = true;
+    cameraBtn.querySelector('.dot').classList.remove('off');
+    return true;
+  } catch (err) {
+    console.warn('Camera error:', err);
+    video.style.display = 'none';
+    noCamera.style.display = 'flex';
+    cameraBtn.querySelector('.dot').classList.add('off');
+    return false;
+  }
+}
+
+function stopCamera() {
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+  video.style.display = 'none';
+  noCamera.style.display = 'flex';
+  cameraActive = false;
+  cameraBtn.querySelector('.dot').classList.add('off');
+}
+
+cameraBtn.addEventListener('click', async () => {
+  if (cameraActive) stopCamera();
+  else await startCamera();
+});
+
+/* ── INSTRUCTIONS / START ── */
+startBtn.addEventListener('click', async () => {
+  const ok = await startCamera();
+  instructions.classList.add('hidden');
+  if (!ok) showHint('Camera unavailable — using dark background mode');
+  else showHint('Select a vase from the catalog, then tap the scene to place it', 4000);
+});
+
+/* ── HINT ── */
+let hintTimer;
+function showHint(msg, duration = 3500) {
+  hint.textContent = msg;
+  hint.classList.remove('hidden');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => hint.classList.add('hidden'), duration);
+}
+
+/* ── PLACE VASE ── */
+function placeVase(x, y) {
+  if (!selectedVaseData) return;
+
+  const size = parseInt(sizeSlider.value);
+  const el = createPlacedVase(selectedVaseData, x, y, size);
+  scene.appendChild(el);
+  placedVases.push(el);
+  updateCountBadge();
+  selectPlaced(el);
+}
+
+function createPlacedVase(vase, x, y, size) {
+  const el = document.createElement('div');
+  el.className = 'placed-vase';
+  el.dataset.vaseId = vase.id;
+  el.dataset.uid = nextId++;
+
+  const w = size;
+  const h = Math.round(size * 1.5); // portrait ratio
+
+  el.style.left = (x - w / 2) + 'px';
+  el.style.top  = (y - h) + 'px';
+  el.style.width  = w + 'px';
+  el.style.height = h + 'px';
+
+  el.innerHTML = `
+    <div class="placed-vase-inner" style="width:100%;height:100%;">
+      <!-- TODO: replace with real photo -->
+      <div class="placed-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+          <path d="M7 3h10l1 5H6L7 3zM6 8c0 4 1.5 7 3 9h6c1.5-2 3-5 3-9"/>
+          <ellipse cx="12" cy="8" rx="6" ry="1.5"/>
+        </svg>
+        <span>${vase.name}</span>
+      </div>
+      <img
+        class="placed-real-img"
+        src="images/${vase.file}"
+        alt="${vase.name}"
+        onerror="this.style.display='none'"
+        onload="this.classList.add('loaded'); this.previousElementSibling.style.display='none'"
+      />
+    </div>
+    <div class="placed-label">${vase.name}</div>
+  `;
+
+  attachDragListeners(el);
+
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!isDragging) selectPlaced(el);
+  });
+  el.addEventListener('touchend', e => {
+    e.stopPropagation();
+    if (!isDragging) selectPlaced(el);
+  });
+
+  return el;
+}
+
+/* ── SELECT / DESELECT PLACED ── */
+function selectPlaced(el) {
+  deselectPlaced();
+  selectedPlaced = el;
+  el.classList.add('selected');
+  sizePanel.classList.add('visible');
+
+  // Sync slider to current size
+  const currentW = parseInt(el.style.width);
+  sizeSlider.value = currentW;
+}
+
+function deselectPlaced() {
+  if (selectedPlaced) {
+    selectedPlaced.classList.remove('selected');
+    selectedPlaced = null;
+  }
+  sizePanel.classList.remove('visible');
+}
+
+/* ── SIZE SLIDER ── */
+sizeSlider.addEventListener('input', () => {
+  if (!selectedPlaced) return;
+  const size = parseInt(sizeSlider.value);
+  const w = size;
+  const h = Math.round(size * 1.5);
+  // keep bottom anchor position
+  const oldW = parseInt(selectedPlaced.style.width);
+  const oldH = parseInt(selectedPlaced.style.height);
+  const cx = parseInt(selectedPlaced.style.left) + oldW / 2;
+  const bottom = parseInt(selectedPlaced.style.top) + oldH;
+
+  selectedPlaced.style.width  = w + 'px';
+  selectedPlaced.style.height = h + 'px';
+  selectedPlaced.style.left   = (cx - w / 2) + 'px';
+  selectedPlaced.style.top    = (bottom - h) + 'px';
+});
+
+/* ── DELETE ── */
+deleteBtn.addEventListener('click', deleteSelected);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if (e.key === 'Escape') deselectPlaced();
+});
+
+function deleteSelected() {
+  if (!selectedPlaced) return;
+  selectedPlaced.remove();
+  placedVases = placedVases.filter(v => v !== selectedPlaced);
+  selectedPlaced = null;
+  sizePanel.classList.remove('visible');
+  updateCountBadge();
+}
+
+/* ── CLEAR ALL ── */
+clearBtn.addEventListener('click', () => {
+  placedVases.forEach(v => v.remove());
+  placedVases = [];
+  selectedPlaced = null;
+  sizePanel.classList.remove('visible');
+  updateCountBadge();
+});
+
+/* ── COUNT BADGE ── */
+function updateCountBadge() {
+  const n = placedVases.length;
+  if (n === 0) {
+    countBadge.classList.remove('visible');
+  } else {
+    countBadge.textContent = `${n} placed`;
+    countBadge.classList.add('visible');
+  }
+}
+
+/* ── SCENE CLICK → PLACE ── */
+scene.addEventListener('click', e => {
+  if (isDragging) return;
+  if (!selectedVaseData) {
+    showHint('First select a vase from the catalog below');
+    return;
+  }
+  if (e.target.closest('.placed-vase')) return;
+  placeVase(e.clientX, e.clientY);
+});
+
+scene.addEventListener('touchend', e => {
+  if (isDragging) return;
+  if (!selectedVaseData) return;
+  if (e.target.closest('.placed-vase')) return;
+  const t = e.changedTouches[0];
+  placeVase(t.clientX, t.clientY);
+}, { passive: false });
+
+/* Click outside placed vases deselects */
+scene.addEventListener('mousedown', e => {
+  if (!e.target.closest('.placed-vase') && !e.target.closest('#size-panel')) {
+    deselectPlaced();
+  }
+});
+
+/* ── DRAG ── */
+let isDragging = false;
+let dragEl = null;
+let dragOffsetX = 0, dragOffsetY = 0;
+let dragStartX = 0, dragStartY = 0;
+const DRAG_THRESHOLD = 5;
+
+function attachDragListeners(el) {
+  el.addEventListener('mousedown', onDragStart);
+  el.addEventListener('touchstart', onDragStart, { passive: false });
+}
+
+function onDragStart(e) {
+  if (e.type === 'touchstart') e.preventDefault();
+  const point = e.touches ? e.touches[0] : e;
+  dragStartX = point.clientX;
+  dragStartY = point.clientY;
+  isDragging = false;
+  dragEl = e.currentTarget;
+
+  const rect = dragEl.getBoundingClientRect();
+  dragOffsetX = point.clientX - rect.left;
+  dragOffsetY = point.clientY - rect.top;
+
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup',   onDragEnd);
+  document.addEventListener('touchmove', onDragMove, { passive: false });
+  document.addEventListener('touchend',  onDragEnd);
+}
+
+function onDragMove(e) {
+  if (!dragEl) return;
+  if (e.type === 'touchmove') e.preventDefault();
+  const point = e.touches ? e.touches[0] : e;
+
+  const dx = point.clientX - dragStartX;
+  const dy = point.clientY - dragStartY;
+
+  if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+    isDragging = true;
+    dragEl.style.cursor = 'grabbing';
+  }
+
+  if (!isDragging) return;
+
+  dragEl.style.left = (point.clientX - dragOffsetX) + 'px';
+  dragEl.style.top  = (point.clientY - dragOffsetY) + 'px';
+}
+
+function onDragEnd(e) {
+  if (dragEl) dragEl.style.cursor = 'grab';
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup',   onDragEnd);
+  document.removeEventListener('touchmove', onDragMove);
+  document.removeEventListener('touchend',  onDragEnd);
+
+  setTimeout(() => { isDragging = false; }, 0);
+  dragEl = null;
+}
+
+/* ── INIT ── */
+buildCatalog();
+// Pre-hide video until camera starts
+video.style.display = 'none';
+</script>
+</body>
+</html>
