@@ -1,31 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>VASÉ — AR Vase Viewer</title>
+<title>СКАЗ ПО КРАЮ — AR просмотр ваз</title>
 <!--
   Image files (in ./images/ folder):
-  vase-1.png   — Milano
-  vase-2.png   — Kyoto
-  vase-3.png   — Oslo
-  vase-4.png   — Paris
-  vase-5.png   — Vienna
-  vase-6.png   — Havana
-  vase-7.png   — Nairobi
-  vase-8.png   — Seoul
-  vase-9.png   — Lisbon
-  vase-10.png  — Cairo
-  vase-11.png  — Stockholm
-  vase-12.png  — Mumbai
-  vase-13.png  — Dubrovnik
-  vase-14.png  — Athens
+  vase-1.png  — Башня Лисий Хвост
+  vase-2.png  — Башня Огненной искры красная
+  vase-3.png  — Башня Огненной искры розовая
+  vase-4.png  — Башня Огненной искры серая
+  vase-5.png  — Башня Огненной искры черная
+  vase-6.png  — Башня Серебряного инея
+  vase-7.png  — Башня Полосатой тропы маленькая
+  vase-8.png  — Башня Лисий Хвост
+  vase-9.png  — Башня Медного заката
+  vase-10.png — Башня тихого озера
+  vase-11.png — Башня Пестрого купола
+  vase-12.png — Башня Прерий
+  vase-13.png — Башня Пятнистого духа
+  vase-14.png — Молочной реки
 
-  PNG with transparent background — renders with drop-shadow blending in AR scene.
+  PNG с прозрачным фоном — отображается с тенью в AR-сцене.
 -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -35,9 +32,9 @@
     --sand:    #D4C8B8;
     --dark:    #2C2C2C;
     --mid:     #6B6560;
-    --accent:  #8B6F5E;
-    --gold:    #C4A882;
-    --ring:    #C4A882;
+    --accent:  #7D1F2E;
+    --gold:    #7D1F2E;
+    --ring:    #7D1F2E;
     --panel-h: 210px;
   }
 
@@ -45,7 +42,7 @@
     width: 100%; height: 100%;
     overflow: hidden;
     background: #111;
-    font-family: 'Inter', sans-serif;
+    font-family: Arial, sans-serif;
     color: var(--dark);
   }
 
@@ -60,7 +57,6 @@
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* mirror for selfie feel */
   }
 
   #no-camera {
@@ -70,12 +66,12 @@
     gap: 12px;
     background: linear-gradient(145deg, #1a1612 0%, #2a2420 50%, #1a1612 100%);
     color: var(--sand);
-    font-family: 'Cormorant Garamond', serif;
+    font-family: Arial, sans-serif;
     font-size: 1.1rem;
     letter-spacing: 0.05em;
   }
   #no-camera .nc-icon { font-size: 2.5rem; opacity: 0.4; }
-  #no-camera small { font-family: 'Inter', sans-serif; font-size: 0.75rem; opacity: 0.5; }
+  #no-camera small { font-family: Arial, sans-serif; font-size: 0.75rem; opacity: 0.5; }
 
   /* ── TOP BAR ── */
   #topbar {
@@ -89,25 +85,24 @@
   }
 
   #brand {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.7rem;
-    font-weight: 300;
-    letter-spacing: 0.22em;
+    font-family: Arial, sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
     color: var(--cream);
     text-transform: uppercase;
   }
-  #brand span { font-style: italic; font-weight: 400; color: var(--gold); }
 
   #top-actions { display: flex; gap: 10px; align-items: center; }
 
   .top-btn {
     display: flex; align-items: center; gap: 6px;
     padding: 7px 14px;
-    border: 1px solid rgba(196,168,130,0.4);
+    border: 1px solid rgba(125,31,46,0.4);
     border-radius: 40px;
     background: rgba(20,16,12,0.55);
     color: var(--cream);
-    font-family: 'Inter', sans-serif;
+    font-family: Arial, sans-serif;
     font-size: 0.72rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -115,7 +110,7 @@
     transition: background 0.2s, border-color 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
-  .top-btn:hover { background: rgba(196,168,130,0.18); border-color: var(--gold); }
+  .top-btn:hover { background: rgba(125,31,46,0.18); border-color: var(--gold); }
   .top-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
   #camera-btn .dot {
@@ -136,7 +131,7 @@
     letter-spacing: 0.06em;
     padding: 8px 18px;
     border-radius: 40px;
-    border: 1px solid rgba(196,168,130,0.25);
+    border: 1px solid rgba(125,31,46,0.25);
     backdrop-filter: blur(6px);
     z-index: 90;
     white-space: nowrap;
@@ -157,14 +152,14 @@
 
   #panel-handle {
     width: 36px; height: 4px;
-    background: rgba(196,168,130,0.3);
+    background: rgba(125,31,46,0.3);
     border-radius: 2px;
     margin: 10px auto 6px;
     cursor: ns-resize;
   }
 
   #panel-label {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: Arial, sans-serif;
     font-size: 0.7rem;
     letter-spacing: 0.25em;
     text-transform: uppercase;
@@ -186,7 +181,7 @@
   }
   #catalog::-webkit-scrollbar { height: 3px; }
   #catalog::-webkit-scrollbar-track { background: transparent; }
-  #catalog::-webkit-scrollbar-thumb { background: rgba(196,168,130,0.3); border-radius: 2px; }
+  #catalog::-webkit-scrollbar-thumb { background: rgba(125,31,46,0.3); border-radius: 2px; }
 
   /* ── CATALOG CARD ── */
   .card {
@@ -197,15 +192,15 @@
     border-radius: 10px;
     overflow: hidden;
     background: rgba(30,24,18,0.85);
-    border: 1.5px solid rgba(196,168,130,0.15);
+    border: 1.5px solid rgba(125,31,46,0.15);
     transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
     -webkit-tap-highlight-color: transparent;
     display: flex; flex-direction: column;
   }
-  .card:hover { border-color: rgba(196,168,130,0.45); transform: translateY(-2px); }
+  .card:hover { border-color: rgba(125,31,46,0.45); transform: translateY(-2px); }
   .card.selected {
     border-color: var(--gold);
-    box-shadow: 0 0 0 2px rgba(196,168,130,0.35), 0 8px 24px rgba(0,0,0,0.5);
+    box-shadow: 0 0 0 2px rgba(125,31,46,0.35), 0 8px 24px rgba(0,0,0,0.5);
     transform: translateY(-4px);
   }
 
@@ -222,7 +217,7 @@
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     gap: 5px;
-    border: 1.5px dashed rgba(196,168,130,0.25);
+    border: 1.5px dashed rgba(125,31,46,0.25);
     border-radius: 6px;
     margin: 6px;
   }
@@ -238,12 +233,11 @@
     opacity: 0.45;
   }
 
-  /* Real photo — hidden until src provided */
   .card-real-img {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     object-fit: contain;
-    display: none; /* shown once src is set */
+    display: none;
   }
   .card-real-img.loaded { display: block; }
 
@@ -252,21 +246,21 @@
     flex: 1;
   }
   .card-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.82rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
+    font-family: Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     color: var(--cream);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .card-price {
-    font-family: 'Inter', sans-serif;
+    font-family: Arial, sans-serif;
     font-size: 0.65rem;
     color: var(--gold);
     margin-top: 2px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
   }
 
   /* ── PLACED VASE ── */
@@ -285,13 +279,12 @@
     display: flex; align-items: flex-end; justify-content: center;
   }
 
-  /* Placeholder rendered on scene */
   .placed-placeholder {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     gap: 8px;
     background: rgba(245,240,235,0.12);
-    border: 2px dashed rgba(196,168,130,0.4);
+    border: 2px dashed rgba(125,31,46,0.4);
     border-radius: 8px;
     backdrop-filter: blur(3px);
     width: 100%; height: 100%;
@@ -301,14 +294,13 @@
     color: var(--gold); opacity: 0.55;
   }
   .placed-placeholder span {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: Arial, sans-serif;
     font-size: 0.78rem;
     color: var(--cream);
     opacity: 0.5;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
   }
 
-  /* Real PNG photo on scene — object-fit: contain, transparent bg */
   .placed-real-img {
     width: 100%; height: 100%;
     object-fit: contain;
@@ -317,32 +309,29 @@
   }
   .placed-real-img.loaded { display: block; }
 
-  /* Drop shadow + slight transparency for blending */
   .placed-vase-inner {
     filter: drop-shadow(0 20px 40px rgba(0,0,0,0.55));
     opacity: 0.93;
   }
 
-  /* Selection ring */
   .placed-vase.selected .placed-vase-inner::after {
     content: '';
     position: absolute; inset: -5px;
     border: 2.5px solid var(--ring);
     border-radius: 8px;
-    box-shadow: 0 0 0 4px rgba(196,168,130,0.18), inset 0 0 0 4px rgba(196,168,130,0.08);
+    box-shadow: 0 0 0 4px rgba(125,31,46,0.18), inset 0 0 0 4px rgba(125,31,46,0.08);
     pointer-events: none;
   }
 
-  /* Vase label on scene */
   .placed-label {
     position: absolute;
     bottom: calc(100% + 6px); left: 50%;
     transform: translateX(-50%);
     background: rgba(15,12,9,0.78);
     color: var(--cream);
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
+    font-family: Arial, sans-serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
     padding: 3px 10px;
     border-radius: 20px;
     white-space: nowrap;
@@ -358,7 +347,7 @@
     left: 50%; transform: translateX(-50%);
     bottom: calc(var(--panel-h) + 14px);
     background: rgba(15,12,9,0.82);
-    border: 1px solid rgba(196,168,130,0.25);
+    border: 1px solid rgba(125,31,46,0.25);
     border-radius: 40px;
     padding: 10px 20px;
     display: flex; align-items: center; gap: 14px;
@@ -384,7 +373,7 @@
   #size-slider {
     -webkit-appearance: none;
     width: 120px; height: 3px;
-    background: rgba(196,168,130,0.2);
+    background: rgba(125,31,46,0.2);
     border-radius: 2px;
     outline: none;
     cursor: pointer;
@@ -394,7 +383,7 @@
     width: 16px; height: 16px;
     border-radius: 50%;
     background: var(--gold);
-    box-shadow: 0 0 6px rgba(196,168,130,0.5);
+    box-shadow: 0 0 6px rgba(125,31,46,0.5);
     cursor: pointer;
   }
 
@@ -428,20 +417,19 @@
   #instructions.hidden { opacity: 0; pointer-events: none; }
 
   .inst-brand {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 2.8rem;
-    font-weight: 300;
-    letter-spacing: 0.3em;
+    font-family: Arial, sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
     color: var(--cream);
     text-transform: uppercase;
   }
-  .inst-brand em { font-style: italic; color: var(--gold); }
 
   .inst-tagline {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
+    font-family: Arial, sans-serif;
+    font-size: 0.95rem;
     color: var(--sand);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     font-style: italic;
     margin-top: -10px;
   }
@@ -454,7 +442,7 @@
     display: flex; align-items: flex-start; gap: 12px;
     color: var(--cream);
     font-size: 0.82rem;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     line-height: 1.5;
   }
   .inst-num {
@@ -472,26 +460,26 @@
     margin-top: 10px;
     padding: 13px 40px;
     background: var(--gold);
-    color: var(--dark);
+    color: var(--cream);
     border: none;
     border-radius: 40px;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
-    font-weight: 500;
-    letter-spacing: 0.15em;
+    font-family: Arial, sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
     transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-    box-shadow: 0 4px 20px rgba(196,168,130,0.35);
+    box-shadow: 0 4px 20px rgba(125,31,46,0.35);
   }
-  #start-btn:hover { background: #d4b88f; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(196,168,130,0.45); }
+  #start-btn:hover { background: #A02840; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(125,31,46,0.45); }
 
   /* ── COUNT BADGE ── */
   #count-badge {
     position: fixed;
     top: 66px; right: 20px;
-    background: rgba(196,168,130,0.18);
-    border: 1px solid rgba(196,168,130,0.3);
+    background: rgba(125,31,46,0.18);
+    border: 1px solid rgba(125,31,46,0.3);
     border-radius: 20px;
     padding: 4px 12px;
     font-size: 0.7rem;
@@ -509,27 +497,27 @@
 
 <!-- ── INSTRUCTIONS SCREEN ── -->
 <div id="instructions">
-  <div class="inst-brand">VAS<em>É</em></div>
-  <div class="inst-tagline">Place beauty in your world</div>
+  <div class="inst-brand">СКАЗ ПО КРАЮ</div>
+  <div class="inst-tagline">Поставь красоту в свой мир</div>
   <div class="inst-steps">
     <div class="inst-step">
       <div class="inst-num">1</div>
-      <div>Allow camera access to see your real environment as the backdrop</div>
+      <div>Разрешите доступ к камере, чтобы видеть ваше пространство</div>
     </div>
     <div class="inst-step">
       <div class="inst-num">2</div>
-      <div>Browse the catalog below and tap a vase to select it</div>
+      <div>Выберите вазу из каталога внизу</div>
     </div>
     <div class="inst-step">
       <div class="inst-num">3</div>
-      <div>Tap anywhere in the scene to place the vase — drag to reposition</div>
+      <div>Нажмите на сцену, чтобы разместить вазу — перетащите для перемещения</div>
     </div>
     <div class="inst-step">
       <div class="inst-num">4</div>
-      <div>Tap a placed vase to select it, then resize or delete it</div>
+      <div>Нажмите на размещённую вазу, чтобы изменить размер или удалить</div>
     </div>
   </div>
-  <button id="start-btn">Enable Camera</button>
+  <button id="start-btn">Включить камеру</button>
 </div>
 
 <!-- ── SCENE ── -->
@@ -537,39 +525,39 @@
   <video id="video" autoplay playsinline muted></video>
   <div id="no-camera">
     <div class="nc-icon">&#9673;</div>
-    <div>Camera unavailable</div>
-    <small>Grant camera permission and refresh</small>
+    <div>Камера недоступна</div>
+    <small>Разрешите доступ к камере и обновите страницу</small>
   </div>
 </div>
 
 <!-- ── TOP BAR ── -->
 <div id="topbar">
-  <div id="brand">VAS<span>É</span></div>
+  <div id="brand">СКАЗ ПО КРАЮ</div>
   <div id="top-actions">
     <button class="top-btn" id="camera-btn">
       <div class="dot off"></div>
-      <span>Camera</span>
+      <span>Камера</span>
     </button>
     <button class="top-btn" id="clear-btn">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M3 4h10M6 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M5 4l.5 8a1 1 0 0 0 1 .9h3a1 1 0 0 0 1-.9L11 4"/>
       </svg>
-      <span>Clear All</span>
+      <span>Очистить всё</span>
     </button>
   </div>
 </div>
 
 <!-- ── HINT ── -->
-<div id="hint">Select a vase from the catalog, then tap the scene to place it</div>
+<div id="hint">Выберите вазу из каталога и нажмите на сцену, чтобы разместить её</div>
 
 <!-- ── COUNT BADGE ── -->
 <div id="count-badge"></div>
 
 <!-- ── SIZE / DELETE PANEL ── -->
 <div id="size-panel">
-  <label>Size</label>
+  <label>Размер</label>
   <input type="range" id="size-slider" min="60" max="400" value="160" />
-  <button id="delete-btn" title="Delete (Delete key)">
+  <button id="delete-btn" title="Удалить">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
       <path d="M3 4h10M6 4V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M5 4l.5 8a1 1 0 0 0 1 .9h3a1 1 0 0 0 1-.9L11 4"/>
     </svg>
@@ -579,38 +567,32 @@
 <!-- ── BOTTOM PANEL ── -->
 <div id="panel">
   <div id="panel-handle"></div>
-  <div id="panel-label">Collection</div>
+  <div id="panel-label">Коллекция</div>
   <div id="catalog"></div>
 </div>
 
 <script>
-/* ──────────────────────────────────────────
-   VASE DATA
-   14 vases — drop images into ./images/
-   naming: vase-01.jpg … vase-14.jpg
-   Use PNG with transparent background for best blending
-────────────────────────────────────────── */
 const VASES = [
-  { id: 1,  name: 'Milano',    price: '$120', file: 'vase-1.png'  },
-  { id: 2,  name: 'Kyoto',     price: '$95',  file: 'vase-2.png'  },
-  { id: 3,  name: 'Oslo',      price: '$140', file: 'vase-3.png'  },
-  { id: 4,  name: 'Paris',     price: '$175', file: 'vase-4.png'  },
-  { id: 5,  name: 'Vienna',    price: '$110', file: 'vase-5.png'  },
-  { id: 6,  name: 'Havana',    price: '$88',  file: 'vase-6.png'  },
-  { id: 7,  name: 'Nairobi',   price: '$130', file: 'vase-7.png'  },
-  { id: 8,  name: 'Seoul',     price: '$105', file: 'vase-8.png'  },
-  { id: 9,  name: 'Lisbon',    price: '$115', file: 'vase-9.png'  },
-  { id: 10, name: 'Cairo',     price: '$98',  file: 'vase-10.png' },
-  { id: 11, name: 'Stockholm', price: '$155', file: 'vase-11.png' },
-  { id: 12, name: 'Mumbai',    price: '$82',  file: 'vase-12.png' },
-  { id: 13, name: 'Dubrovnik', price: '$145', file: 'vase-13.png' },
-  { id: 14, name: 'Athens',    price: '$135', file: 'vase-14.png' },
+  { id: 1,  name: 'Башня Лисий Хвост',               price: '27 900 ₽', file: 'vase-1.png'  },
+  { id: 2,  name: 'Башня Огненной искры красная',     price: '29 300 ₽', file: 'vase-2.png'  },
+  { id: 3,  name: 'Башня Огненной искры розовая',     price: '29 300 ₽', file: 'vase-3.png'  },
+  { id: 4,  name: 'Башня Огненной искры серая',       price: '29 300 ₽', file: 'vase-4.png'  },
+  { id: 5,  name: 'Башня Огненной искры черная',      price: '29 300 ₽', file: 'vase-5.png'  },
+  { id: 6,  name: 'Башня Серебряного инея',           price: '29 900 ₽', file: 'vase-6.png'  },
+  { id: 7,  name: 'Башня Полосатой тропы маленькая',  price: '27 900 ₽', file: 'vase-7.png'  },
+  { id: 8,  name: 'Башня Лисий Хвост',               price: '27 900 ₽', file: 'vase-8.png'  },
+  { id: 9,  name: 'Башня Медного заката',             price: '25 900 ₽', file: 'vase-9.png'  },
+  { id: 10, name: 'Башня тихого озера',               price: '28 900 ₽', file: 'vase-10.png' },
+  { id: 11, name: 'Башня Пестрого купола',            price: '29 400 ₽', file: 'vase-11.png' },
+  { id: 12, name: 'Башня Прерий',                    price: '39 700 ₽', file: 'vase-12.png' },
+  { id: 13, name: 'Башня Пятнистого духа',            price: '45 300 ₽', file: 'vase-13.png' },
+  { id: 14, name: 'Молочной реки',                   price: '43 900 ₽', file: 'vase-14.png' },
 ];
 
 /* ── STATE ── */
-let selectedVaseData = null;   // vase from catalog currently chosen
-let selectedPlaced   = null;   // placed vase element currently selected
-let placedVases      = [];     // all placed vase elements
+let selectedVaseData = null;
+let selectedPlaced   = null;
+let placedVases      = [];
 let cameraActive     = false;
 let nextId           = 1;
 
@@ -638,13 +620,12 @@ function buildCatalog() {
 
     card.innerHTML = `
       <div class="card-img-wrap">
-        <!-- TODO: replace with real photo -->
         <div class="card-placeholder">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
             <path d="M7 3h10l1 5H6L7 3zM6 8c0 4 1.5 7 3 9h6c1.5-2 3-5 3-9"/>
             <ellipse cx="12" cy="8" rx="6" ry="1.5"/>
           </svg>
-          <span>Vase photo</span>
+          <span>Фото вазы</span>
         </div>
         <img
           class="card-real-img"
@@ -675,7 +656,7 @@ function selectCatalogVase(vase, card) {
   document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
   card.classList.add('selected');
 
-  showHint(`Tap the scene to place "${vase.name}"`);
+  showHint(`Нажмите на сцену, чтобы разместить «${vase.name}»`);
 }
 
 /* ── CAMERA ── */
@@ -720,8 +701,8 @@ cameraBtn.addEventListener('click', async () => {
 startBtn.addEventListener('click', async () => {
   const ok = await startCamera();
   instructions.classList.add('hidden');
-  if (!ok) showHint('Camera unavailable — using dark background mode');
-  else showHint('Select a vase from the catalog, then tap the scene to place it', 4000);
+  if (!ok) showHint('Камера недоступна — используется тёмный фон');
+  else showHint('Выберите вазу из каталога и нажмите на сцену, чтобы разместить её', 4000);
 });
 
 /* ── HINT ── */
@@ -752,7 +733,7 @@ function createPlacedVase(vase, x, y, size) {
   el.dataset.uid = nextId++;
 
   const w = size;
-  const h = Math.round(size * 1.5); // portrait ratio
+  const h = Math.round(size * 1.5);
 
   el.style.left = (x - w / 2) + 'px';
   el.style.top  = (y - h) + 'px';
@@ -761,7 +742,6 @@ function createPlacedVase(vase, x, y, size) {
 
   el.innerHTML = `
     <div class="placed-vase-inner" style="width:100%;height:100%;">
-      <!-- TODO: replace with real photo -->
       <div class="placed-placeholder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
           <path d="M7 3h10l1 5H6L7 3zM6 8c0 4 1.5 7 3 9h6c1.5-2 3-5 3-9"/>
@@ -801,7 +781,6 @@ function selectPlaced(el) {
   el.classList.add('selected');
   sizePanel.classList.add('visible');
 
-  // Sync slider to current size
   const currentW = parseInt(el.style.width);
   sizeSlider.value = currentW;
 }
@@ -820,7 +799,6 @@ sizeSlider.addEventListener('input', () => {
   const size = parseInt(sizeSlider.value);
   const w = size;
   const h = Math.round(size * 1.5);
-  // keep bottom anchor position
   const oldW = parseInt(selectedPlaced.style.width);
   const oldH = parseInt(selectedPlaced.style.height);
   const cx = parseInt(selectedPlaced.style.left) + oldW / 2;
@@ -863,7 +841,7 @@ function updateCountBadge() {
   if (n === 0) {
     countBadge.classList.remove('visible');
   } else {
-    countBadge.textContent = `${n} placed`;
+    countBadge.textContent = `${n} размещено`;
     countBadge.classList.add('visible');
   }
 }
@@ -872,7 +850,7 @@ function updateCountBadge() {
 scene.addEventListener('click', e => {
   if (isDragging) return;
   if (!selectedVaseData) {
-    showHint('First select a vase from the catalog below');
+    showHint('Сначала выберите вазу из каталога');
     return;
   }
   if (e.target.closest('.placed-vase')) return;
@@ -887,7 +865,6 @@ scene.addEventListener('touchend', e => {
   placeVase(t.clientX, t.clientY);
 }, { passive: false });
 
-/* Click outside placed vases deselects */
 scene.addEventListener('mousedown', e => {
   if (!e.target.closest('.placed-vase') && !e.target.closest('#size-panel')) {
     deselectPlaced();
@@ -956,7 +933,6 @@ function onDragEnd(e) {
 
 /* ── INIT ── */
 buildCatalog();
-// Pre-hide video until camera starts
 video.style.display = 'none';
 </script>
 </body>
